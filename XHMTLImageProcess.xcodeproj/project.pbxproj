@@ -11,7 +11,6 @@
 		D26099E5239E48C9001ED80A /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = D26099E4239E48C9001ED80A /* AppDelegate.m */; };
 		D26099E8239E48C9001ED80A /* Renderer.m in Sources */ = {isa = PBXBuildFile; fileRef = D26099E7239E48C9001ED80A /* Renderer.m */; };
 		D26099EB239E48C9001ED80A /* GameViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D26099EA239E48C9001ED80A /* GameViewController.m */; };
-		D26099ED239E48C9001ED80A /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = D26099EC239E48C9001ED80A /* Shaders.metal */; };
 		D26099F1239E48C9001ED80A /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D26099EF239E48C9001ED80A /* Main.storyboard */; };
 		D26099F3239E48C9001ED80A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D26099F2239E48C9001ED80A /* Assets.xcassets */; };
 		D26099F6239E48C9001ED80A /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D26099F4239E48C9001ED80A /* LaunchScreen.storyboard */; };
@@ -46,7 +45,6 @@
 		D26099E7239E48C9001ED80A /* Renderer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Renderer.m; sourceTree = "<group>"; };
 		D26099E9239E48C9001ED80A /* GameViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GameViewController.h; sourceTree = "<group>"; };
 		D26099EA239E48C9001ED80A /* GameViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GameViewController.m; sourceTree = "<group>"; };
-		D26099EC239E48C9001ED80A /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 		D26099EE239E48C9001ED80A /* ShaderTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ShaderTypes.h; sourceTree = "<group>"; };
 		D26099F0239E48C9001ED80A /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		D26099F2239E48C9001ED80A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -116,7 +114,6 @@
 				D26099E7239E48C9001ED80A /* Renderer.m */,
 				D26099E9239E48C9001ED80A /* GameViewController.h */,
 				D26099EA239E48C9001ED80A /* GameViewController.m */,
-				D26099EC239E48C9001ED80A /* Shaders.metal */,
 				D26099EE239E48C9001ED80A /* ShaderTypes.h */,
 				D26099EF239E48C9001ED80A /* Main.storyboard */,
 				D26099F2239E48C9001ED80A /* Assets.xcassets */,
@@ -276,7 +273,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				D26099F9239E48C9001ED80A /* main.m in Sources */,
-				D26099ED239E48C9001ED80A /* Shaders.metal in Sources */,
 				D26099E8239E48C9001ED80A /* Renderer.m in Sources */,
 				D26099EB239E48C9001ED80A /* GameViewController.m in Sources */,
 				D20A437923A11C1E00917963 /* Quad.metal in Sources */,
