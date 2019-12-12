@@ -23,7 +23,7 @@ vertex VSOutput vertexQuadMain(uint vertexID [[ vertex_id]],
 {
     VSOutput out;
     out.pos = vector_float4(vertexArr[vertexID].position,0.0,1.0);
-    out.pos.y = 1 - out.pos.y;
+    //out.pos.y = 1 - out.pos.y;
     out.texcoord = vertexArr[vertexID].textureCoordinate;
     return out;
 }

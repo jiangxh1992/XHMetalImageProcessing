@@ -17,6 +17,7 @@
 		D26099F9239E48C9001ED80A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D26099F8239E48C9001ED80A /* main.m */; };
 		D2609A03239E48CA001ED80A /* XHMTLImageProcessTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D2609A02239E48CA001ED80A /* XHMTLImageProcessTests.m */; };
 		D2609A0E239E48CA001ED80A /* XHMTLImageProcessUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = D2609A0D239E48CA001ED80A /* XHMTLImageProcessUITests.m */; };
+		D27230DE23A219AC003C364E /* MetalPerformanceShaders.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27230DD23A219AC003C364E /* MetalPerformanceShaders.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +58,7 @@
 		D2609A09239E48CA001ED80A /* XHMTLImageProcessUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = XHMTLImageProcessUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D2609A0D239E48CA001ED80A /* XHMTLImageProcessUITests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = XHMTLImageProcessUITests.m; sourceTree = "<group>"; };
 		D2609A0F239E48CA001ED80A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D27230DD23A219AC003C364E /* MetalPerformanceShaders.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalPerformanceShaders.framework; path = System/Library/Frameworks/MetalPerformanceShaders.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,6 +66,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D27230DE23A219AC003C364E /* MetalPerformanceShaders.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -91,6 +94,7 @@
 				D2609A01239E48CA001ED80A /* XHMTLImageProcessTests */,
 				D2609A0C239E48CA001ED80A /* XHMTLImageProcessUITests */,
 				D26099E1239E48C9001ED80A /* Products */,
+				D27230DC23A219AB003C364E /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -140,6 +144,14 @@
 				D2609A0F239E48CA001ED80A /* Info.plist */,
 			);
 			path = XHMTLImageProcessUITests;
+			sourceTree = "<group>";
+		};
+		D27230DC23A219AB003C364E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				D27230DD23A219AC003C364E /* MetalPerformanceShaders.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

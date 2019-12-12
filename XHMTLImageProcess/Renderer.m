@@ -7,6 +7,7 @@
 //
 #import <simd/simd.h>
 #import <ModelIO/ModelIO.h>
+#import <MetalPerformanceShaders/MetalPerformanceShaders.h>
 #import "Renderer.h"
 // Include header shared between C code here, which executes Metal API commands, and .metal files
 #import "ShaderTypes.h"
@@ -106,6 +107,7 @@
     _commandQueue = [_device newCommandQueue];
 }
 
+// 加载要处理的图像
 - (void)_loadAssets
 {
     NSError *error;
@@ -136,15 +138,19 @@
     curRenderDescriptor.tileHeight = 32;
     if(curRenderDescriptor !=  nil)
     {
+        // MPS 高斯模糊
+        MPSImageGaussianBlur *gaussianBlur = [[MPSImageGaussianBlur alloc] initWithDevice:_device sigma:3];
+        [gaussianBlur encodeToCommandBuffer:commandBuffer sourceTexture:sourceTexture destinationTexture:destTexture];
+        
         id<MTLRenderCommandEncoder> myRenderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:curRenderDescriptor];
         
         // 图像处理
-        [myRenderEncoder pushDebugGroup:@"ImageProcess"];
-        [myRenderEncoder setRenderPipelineState:_postprocessPipeline];
-        [myRenderEncoder setTileTexture:sourceTexture atIndex:0];
-        [myRenderEncoder setTileTexture:destTexture atIndex:1];
-        [myRenderEncoder dispatchThreadsPerTile:MTLSizeMake(32, 32, 1)];
-        [myRenderEncoder popDebugGroup];
+        //[myRenderEncoder pushDebugGroup:@"ImageProcess"];
+        //[myRenderEncoder setRenderPipelineState:_postprocessPipeline];
+        //[myRenderEncoder setTileTexture:sourceTexture atIndex:0];
+        //[myRenderEncoder setTileTexture:destTexture atIndex:1];
+        //[myRenderEncoder dispatchThreadsPerTile:MTLSizeMake(32, 32, 1)];
+        //[myRenderEncoder popDebugGroup];
         
         // 绘制RT到屏幕上
         [myRenderEncoder pushDebugGroup:@"DrawQuad"];
