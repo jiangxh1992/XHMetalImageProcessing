@@ -47,8 +47,25 @@ kernel void postProcessing(texture2d<float, access::read> source[[texture(0)]],
                            uint2 gid [[thread_position_in_grid]]
                            )
 {
+    if(gid.x >= source.get_width() || gid.y >= source.get_height()) return;
+    
     float4 source_color = source.read(gid);
-    float4 result_color = float4(source_color.x,0,0,0); // post processing
+    
+    ushort grayLevel = (ushort)(source_color.x * 255);
+    
+    //float r = grayLevel / 255.0; // gray level
+    
+    /* 灰度变换 */
+    //float r = (255 - grayLevel) / 255.0; // image negative
+    //float r = 10 * (log(grayLevel + 1.0) / 255.0); // log transform
+    //float r = 10 * (pow(grayLevel, 0.5) / 255.0); // power-law transformation
+    
+    /* bit plane slicing */
+     int n = 7;
+    int mask = 1 << n;
+    float r = (grayLevel & mask) / 255.0;
+    
+    float4 result_color = float4(r,r,r,0);
     
     dest.write(result_color, gid);
 }

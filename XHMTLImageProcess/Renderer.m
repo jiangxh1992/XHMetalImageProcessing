@@ -5,8 +5,6 @@
 //  Created by Xinhou Jiang on 2019/12/9.
 //  Copyright © 2019 Xinhou Jiang. All rights reserved.
 //
-#import <simd/simd.h>
-#import <ModelIO/ModelIO.h>
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
 #import "Renderer.h"
 // Include header shared between C code here, which executes Metal API commands, and .metal files
@@ -21,12 +19,13 @@
     id<MTLTexture> sourceTexture;
     id<MTLTexture> destTexture;
     
-    id <MTLRenderPipelineState> _pipelineState;
+    id<MTLRenderPipelineState> _pipelineState;
     id<MTLRenderPipelineState> _quadPipeline;
     id<MTLRenderPipelineState> _postprocessPipeline;
     
     id <MTLDepthStencilState> _quadDepthState;
     CGSize screenSize;
+    MTLSize tileSize;
 }
 
 -(nonnull instancetype)initWithMetalKitView:(nonnull MTKView *)view;
@@ -35,8 +34,8 @@
     if(self)
     {
         _device = view.device;
-        [self _loadMetalWithView:view];
         [self _loadAssets];
+        [self _loadMetalWithView:view];
     }
     return self;
 }
@@ -47,15 +46,17 @@
     view.colorPixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
     view.sampleCount = 1;
     screenSize = view.frame.size;
+    tileSize = MTLSizeMake(32, 32, 1);
 
     id<MTLLibrary> defaultLibrary = [_device newDefaultLibrary];
     
-    // postprocess pipeline
-    id <MTLFunction> postprocessFunction = [defaultLibrary newFunctionWithName:@"postProcessing"];
     MTLTileRenderPipelineDescriptor* tileRenderPipelineDescriptor = [MTLTileRenderPipelineDescriptor new];
     tileRenderPipelineDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat;
     tileRenderPipelineDescriptor.rasterSampleCount = view.sampleCount;
     tileRenderPipelineDescriptor.threadgroupSizeMatchesTileSize = YES;
+    
+    // postprocess pipeline
+    id <MTLFunction> postprocessFunction = [defaultLibrary newFunctionWithName:@"postProcessing"];
     tileRenderPipelineDescriptor.tileFunction = postprocessFunction;
     _postprocessPipeline = [_device newRenderPipelineStateWithTileDescriptor:tileRenderPipelineDescriptor options:0 reflection:nil error:nil];
     
@@ -73,6 +74,7 @@
     };
     _quadBuffer = [_device newBufferWithBytes:verts length:sizeof(verts) options:MTLResourceStorageModeShared];
     _quadBuffer.label = @"QuadVB";
+    
     id<MTLFunction> vertexQuadFunction = [defaultLibrary newFunctionWithName:@"vertexQuadMain"];
     id<MTLFunction> fragmentQuadFunction = [defaultLibrary newFunctionWithName:@"fragmentQuadMain"];
     MTLRenderPipelineDescriptor *pipeDesc = [[MTLRenderPipelineDescriptor alloc] init];
@@ -102,7 +104,7 @@
     texBufferDesc.storageMode = MTLStorageModePrivate;
     texBufferDesc.usage |= MTLTextureUsageRenderTarget | MTLTextureUsageShaderWrite | MTLTextureUsageShaderRead;
     destTexture = [_device newTextureWithDescriptor:texBufferDesc];
-    destTexture.label = @"sourceTexture";
+    destTexture.label = @"destTexture";
 
     _commandQueue = [_device newCommandQueue];
 }
@@ -122,6 +124,7 @@
                                            bundle:nil
                                           options:textureLoaderOptions
                                             error:&error];
+    sourceTexture.label = @"sourceTexture";
     if(!sourceTexture || error)
     {
         NSLog(@"Error creating texture %@", error.localizedDescription);
@@ -133,24 +136,26 @@
     id <MTLCommandBuffer> commandBuffer = [_commandQueue commandBuffer];
     commandBuffer.label = @"MyCommand";
 
+    NSUInteger threadgroupLength = sizeof(int) * 256;
     MTLRenderPassDescriptor* curRenderDescriptor = view.currentRenderPassDescriptor;
-    curRenderDescriptor.tileWidth = 32;
-    curRenderDescriptor.tileHeight = 32;
+    curRenderDescriptor.threadgroupMemoryLength = threadgroupLength;
+    curRenderDescriptor.tileWidth = tileSize.width;
+    curRenderDescriptor.tileHeight = tileSize.height;
     if(curRenderDescriptor !=  nil)
     {
         // MPS 高斯模糊
-        MPSImageGaussianBlur *gaussianBlur = [[MPSImageGaussianBlur alloc] initWithDevice:_device sigma:3];
-        [gaussianBlur encodeToCommandBuffer:commandBuffer sourceTexture:sourceTexture destinationTexture:destTexture];
+        //MPSImageGaussianBlur *gaussianBlur = [[MPSImageGaussianBlur alloc] initWithDevice:_device sigma:3];
+        //[gaussianBlur encodeToCommandBuffer:commandBuffer sourceTexture:sourceTexture destinationTexture:destTexture];
         
         id<MTLRenderCommandEncoder> myRenderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:curRenderDescriptor];
         
         // 图像处理
-        //[myRenderEncoder pushDebugGroup:@"ImageProcess"];
-        //[myRenderEncoder setRenderPipelineState:_postprocessPipeline];
-        //[myRenderEncoder setTileTexture:sourceTexture atIndex:0];
-        //[myRenderEncoder setTileTexture:destTexture atIndex:1];
-        //[myRenderEncoder dispatchThreadsPerTile:MTLSizeMake(32, 32, 1)];
-        //[myRenderEncoder popDebugGroup];
+        [myRenderEncoder pushDebugGroup:@"ImageProcess"];
+        [myRenderEncoder setRenderPipelineState:_postprocessPipeline];
+        [myRenderEncoder setTileTexture:sourceTexture atIndex:0];
+        [myRenderEncoder setTileTexture:destTexture atIndex:1];
+        [myRenderEncoder dispatchThreadsPerTile:tileSize];
+        [myRenderEncoder popDebugGroup];
         
         // 绘制RT到屏幕上
         [myRenderEncoder pushDebugGroup:@"DrawQuad"];
@@ -164,6 +169,7 @@
         [myRenderEncoder endEncoding];
         [commandBuffer presentDrawable:view.currentDrawable];
     }
+    
     [commandBuffer commit];
 }
 
