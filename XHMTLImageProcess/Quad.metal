@@ -41,14 +41,3 @@ fragment FSOutput fragmentQuadMain(VSOutput input [[stage_in]],
     out.frag_data = colorSample;//vector_half4(input.texcoord.x,input.texcoord.y,0,0);//
     return out;
 }
-
-kernel void postProcessing(texture2d<float, access::read> source[[texture(0)]],
-                           texture2d<float, access::write> dest[[texture(1)]],
-                           uint2 gid [[thread_position_in_grid]]
-                           )
-{
-    float4 source_color = source.read(gid);
-    float4 result_color = float4(source_color.x,0,0,0); // post processing
-    
-    dest.write(result_color, gid);
-}

@@ -5,8 +5,6 @@
 //  Created by Xinhou Jiang on 2019/12/9.
 //  Copyright © 2019 Xinhou Jiang. All rights reserved.
 //
-#import <simd/simd.h>
-#import <ModelIO/ModelIO.h>
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
 #import "Renderer.h"
 // Include header shared between C code here, which executes Metal API commands, and .metal files
@@ -17,6 +15,7 @@
     id <MTLCommandQueue> _commandQueue;
     
     id<MTLBuffer> _quadBuffer;
+    id<MTLBuffer> _accHistogramBuffer; // 直方图
     
     id<MTLTexture> sourceTexture;
     id<MTLTexture> destTexture;
@@ -27,6 +26,8 @@
     
     id <MTLDepthStencilState> _quadDepthState;
     CGSize screenSize;
+    
+    NSString *imageName;
 }
 
 -(nonnull instancetype)initWithMetalKitView:(nonnull MTKView *)view;
@@ -35,8 +36,9 @@
     if(self)
     {
         _device = view.device;
-        [self _loadMetalWithView:view];
+        imageName = @"shamo";
         [self _loadAssets];
+        [self _loadMetalWithView:view];
     }
     return self;
 }
@@ -73,6 +75,35 @@
     };
     _quadBuffer = [_device newBufferWithBytes:verts length:sizeof(verts) options:MTLResourceStorageModeShared];
     _quadBuffer.label = @"QuadVB";
+    
+    // 直方图统计
+    HistogramColor histogramData[256];
+    for (int i = 0; i < 256; ++i) {
+        histogramData[i].hr = 0;
+        histogramData[i].hg = 0;
+        histogramData[i].hb = 0;
+    }
+    UIImage *image = [UIImage imageNamed:imageName];
+    Byte *colors = (Byte *)[image CGImage];
+    for (int i = 0; i< sourceTexture.width * sourceTexture.height; ++i) {
+        //NSLog(@"color%i:%i",i,colors[i * 4 + 0]);
+        histogramData[colors[i * 4 + 0]].hr++;
+        histogramData[colors[i * 4 + 1]].hg++;
+        histogramData[colors[i * 4 + 2]].hb++;
+    }
+    
+    // 累加直方图
+    HistogramColor accHistogramData[256];
+    accHistogramData[0].hr = histogramData[0].hr;
+    accHistogramData[0].hg = histogramData[0].hg;
+    accHistogramData[0].hb = histogramData[0].hb;
+    for (int i = 1; i < 256; ++i) {
+        accHistogramData[i].hr = accHistogramData[i-1].hr + histogramData[i].hr;
+        accHistogramData[i].hg = accHistogramData[i-1].hg + histogramData[i].hg;
+        accHistogramData[i].hb = accHistogramData[i-1].hb + histogramData[i].hb;
+    }
+    _accHistogramBuffer = [_device newBufferWithBytes:accHistogramData length:sizeof(accHistogramData) options:MTLResourceStorageModeShared];
+    
     id<MTLFunction> vertexQuadFunction = [defaultLibrary newFunctionWithName:@"vertexQuadMain"];
     id<MTLFunction> fragmentQuadFunction = [defaultLibrary newFunctionWithName:@"fragmentQuadMain"];
     MTLRenderPipelineDescriptor *pipeDesc = [[MTLRenderPipelineDescriptor alloc] init];
@@ -117,7 +148,7 @@
       MTKTextureLoaderOptionTextureUsage       : @(MTLTextureUsageShaderRead),
       MTKTextureLoaderOptionTextureStorageMode : @(MTLStorageModePrivate)
       };
-    sourceTexture = [textureLoader newTextureWithName:@"lena"
+    sourceTexture = [textureLoader newTextureWithName:imageName
                                       scaleFactor:1.0
                                            bundle:nil
                                           options:textureLoaderOptions
@@ -138,19 +169,16 @@
     curRenderDescriptor.tileHeight = 32;
     if(curRenderDescriptor !=  nil)
     {
-        // MPS 高斯模糊
-        MPSImageGaussianBlur *gaussianBlur = [[MPSImageGaussianBlur alloc] initWithDevice:_device sigma:3];
-        [gaussianBlur encodeToCommandBuffer:commandBuffer sourceTexture:sourceTexture destinationTexture:destTexture];
-        
         id<MTLRenderCommandEncoder> myRenderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:curRenderDescriptor];
         
         // 图像处理
-        //[myRenderEncoder pushDebugGroup:@"ImageProcess"];
-        //[myRenderEncoder setRenderPipelineState:_postprocessPipeline];
-        //[myRenderEncoder setTileTexture:sourceTexture atIndex:0];
-        //[myRenderEncoder setTileTexture:destTexture atIndex:1];
-        //[myRenderEncoder dispatchThreadsPerTile:MTLSizeMake(32, 32, 1)];
-        //[myRenderEncoder popDebugGroup];
+        [myRenderEncoder pushDebugGroup:@"ImageProcess"];
+        [myRenderEncoder setRenderPipelineState:_postprocessPipeline];
+        [myRenderEncoder setTileTexture:sourceTexture atIndex:0];
+        [myRenderEncoder setTileTexture:destTexture atIndex:1];
+        [myRenderEncoder setTileBuffer:_accHistogramBuffer offset:0 atIndex:0];
+        [myRenderEncoder dispatchThreadsPerTile:MTLSizeMake(32, 32, 1)];
+        [myRenderEncoder popDebugGroup];
         
         // 绘制RT到屏幕上
         [myRenderEncoder pushDebugGroup:@"DrawQuad"];

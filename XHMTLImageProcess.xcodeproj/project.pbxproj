@@ -18,6 +18,7 @@
 		D2609A03239E48CA001ED80A /* XHMTLImageProcessTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D2609A02239E48CA001ED80A /* XHMTLImageProcessTests.m */; };
 		D2609A0E239E48CA001ED80A /* XHMTLImageProcessUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = D2609A0D239E48CA001ED80A /* XHMTLImageProcessUITests.m */; };
 		D27230DE23A219AC003C364E /* MetalPerformanceShaders.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27230DD23A219AC003C364E /* MetalPerformanceShaders.framework */; };
+		D2C5B29423AB708900827FFC /* Histogram.metal in Sources */ = {isa = PBXBuildFile; fileRef = D2C5B29323AB708900827FFC /* Histogram.metal */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -59,6 +60,7 @@
 		D2609A0D239E48CA001ED80A /* XHMTLImageProcessUITests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = XHMTLImageProcessUITests.m; sourceTree = "<group>"; };
 		D2609A0F239E48CA001ED80A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D27230DD23A219AC003C364E /* MetalPerformanceShaders.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalPerformanceShaders.framework; path = System/Library/Frameworks/MetalPerformanceShaders.framework; sourceTree = SDKROOT; };
+		D2C5B29323AB708900827FFC /* Histogram.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; path = Histogram.metal; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -111,6 +113,7 @@
 		D26099E2239E48C9001ED80A /* XHMTLImageProcess */ = {
 			isa = PBXGroup;
 			children = (
+				D2C5B29323AB708900827FFC /* Histogram.metal */,
 				D20A437823A11C1D00917963 /* Quad.metal */,
 				D26099E3239E48C9001ED80A /* AppDelegate.h */,
 				D26099E4239E48C9001ED80A /* AppDelegate.m */,
@@ -284,6 +287,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D2C5B29423AB708900827FFC /* Histogram.metal in Sources */,
 				D26099F9239E48C9001ED80A /* main.m in Sources */,
 				D26099E8239E48C9001ED80A /* Renderer.m in Sources */,
 				D26099EB239E48C9001ED80A /* GameViewController.m in Sources */,

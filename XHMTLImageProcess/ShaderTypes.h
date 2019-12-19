@@ -51,5 +51,12 @@ typedef struct
     vector_float2 textureCoordinate;
 } AAPLVertex;
 
+typedef struct
+{
+    int hr;
+    int hg;
+    int hb;
+} HistogramColor;
+
 #endif /* ShaderTypes_h */
 
