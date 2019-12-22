@@ -52,6 +52,7 @@ kernel void postProcessing(texture2d<float, access::read> source[[texture(0)]],
         sk[i].hg = round(255.0 * (accHistogram[i].hg / size));
         sk[i].hb = round(255.0 * (accHistogram[i].hb / size));
     }
+    // 均衡化直方图sk替换原图像灰度值
     float r = sk[grayLevel].hr / 255.0;
     float g = sk[grayLevel].hg / 255.0;
     float b = sk[grayLevel].hb / 255.0;

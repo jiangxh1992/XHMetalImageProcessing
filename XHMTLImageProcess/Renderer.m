@@ -20,9 +20,11 @@
     id<MTLTexture> sourceTexture;
     id<MTLTexture> destTexture;
     
-    id <MTLRenderPipelineState> _pipelineState;
+    id<MTLRenderPipelineState> _pipelineState;
     id<MTLRenderPipelineState> _quadPipeline;
     id<MTLRenderPipelineState> _postprocessPipeline;
+    id<MTLRenderPipelineState> _clearHistogramPipeline;
+    id<MTLRenderPipelineState> _calHistogramPipeline;
     
     id <MTLDepthStencilState> _quadDepthState;
     CGSize screenSize;
@@ -36,7 +38,7 @@
     if(self)
     {
         _device = view.device;
-        imageName = @"shamo";
+        imageName = @"lenatest";
         [self _loadAssets];
         [self _loadMetalWithView:view];
     }
@@ -52,15 +54,24 @@
 
     id<MTLLibrary> defaultLibrary = [_device newDefaultLibrary];
     
-    // postprocess pipeline
-    id <MTLFunction> postprocessFunction = [defaultLibrary newFunctionWithName:@"postProcessing"];
     MTLTileRenderPipelineDescriptor* tileRenderPipelineDescriptor = [MTLTileRenderPipelineDescriptor new];
     tileRenderPipelineDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat;
     tileRenderPipelineDescriptor.rasterSampleCount = view.sampleCount;
     tileRenderPipelineDescriptor.threadgroupSizeMatchesTileSize = YES;
+    
+    // postprocess pipeline
+    id <MTLFunction> postprocessFunction = [defaultLibrary newFunctionWithName:@"postProcessing"];
     tileRenderPipelineDescriptor.tileFunction = postprocessFunction;
     _postprocessPipeline = [_device newRenderPipelineStateWithTileDescriptor:tileRenderPipelineDescriptor options:0 reflection:nil error:nil];
+    /*
+    id <MTLFunction> clearHistogramFunction = [defaultLibrary newFunctionWithName:@"clearBuffer"];
+    tileRenderPipelineDescriptor.tileFunction = clearHistogramFunction;
+    _clearHistogramPipeline = [_device newRenderPipelineStateWithTileDescriptor:tileRenderPipelineDescriptor options:0 reflection:nil error:nil];
     
+    id <MTLFunction> calHistogramFunction = [defaultLibrary newFunctionWithName:@"calHistogram"];
+    tileRenderPipelineDescriptor.tileFunction = calHistogramFunction;
+    _calHistogramPipeline = [_device newRenderPipelineStateWithTileDescriptor:tileRenderPipelineDescriptor options:0 reflection:nil error:nil];
+    */
     // quad buffer
     static const AAPLVertex verts[] =
     {
@@ -76,6 +87,7 @@
     _quadBuffer = [_device newBufferWithBytes:verts length:sizeof(verts) options:MTLResourceStorageModeShared];
     _quadBuffer.label = @"QuadVB";
     
+    /*
     // 直方图统计
     HistogramColor histogramData[256];
     for (int i = 0; i < 256; ++i) {
@@ -86,7 +98,6 @@
     UIImage *image = [UIImage imageNamed:imageName];
     Byte *colors = (Byte *)[image CGImage];
     for (int i = 0; i< sourceTexture.width * sourceTexture.height; ++i) {
-        //NSLog(@"color%i:%i",i,colors[i * 4 + 0]);
         histogramData[colors[i * 4 + 0]].hr++;
         histogramData[colors[i * 4 + 1]].hg++;
         histogramData[colors[i * 4 + 2]].hb++;
@@ -103,7 +114,7 @@
         accHistogramData[i].hb = accHistogramData[i-1].hb + histogramData[i].hb;
     }
     _accHistogramBuffer = [_device newBufferWithBytes:accHistogramData length:sizeof(accHistogramData) options:MTLResourceStorageModeShared];
-    
+    */
     id<MTLFunction> vertexQuadFunction = [defaultLibrary newFunctionWithName:@"vertexQuadMain"];
     id<MTLFunction> fragmentQuadFunction = [defaultLibrary newFunctionWithName:@"fragmentQuadMain"];
     MTLRenderPipelineDescriptor *pipeDesc = [[MTLRenderPipelineDescriptor alloc] init];
@@ -123,7 +134,7 @@
     
     // destTexture
     MTLTextureDescriptor *texBufferDesc =
-    [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
+    [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm_sRGB
                                                        width:screenSize.width
                                                       height:screenSize.height
                                                    mipmapped:NO];
@@ -157,6 +168,7 @@
     {
         NSLog(@"Error creating texture %@", error.localizedDescription);
     }
+    
 }
 
 - (void)drawInMTKView:(nonnull MTKView *)view
@@ -169,7 +181,38 @@
     curRenderDescriptor.tileHeight = 32;
     if(curRenderDescriptor !=  nil)
     {
+        // 计算直方图数据
+        MPSImageHistogramInfo info;
+        info.histogramForAlpha = true;
+        info.numberOfHistogramEntries = 256;
+        info.minPixelValue = simd_make_float4(0, 0, 0, 0);
+        info.maxPixelValue = simd_make_float4(1, 1, 1, 1);
+        MPSImageHistogram *histogram = [[MPSImageHistogram alloc] initWithDevice:_device histogramInfo:&info];
+        size_t length = [histogram histogramSizeForSourceFormat:sourceTexture.pixelFormat];
+        id<MTLBuffer> histogramInfoBuffer = [_device newBufferWithLength:length options:MTLResourceStorageModePrivate];
+        [histogram encodeToCommandBuffer:commandBuffer sourceTexture:sourceTexture histogram:histogramInfoBuffer histogramOffset:0];
+        // 定义直方图均衡化对象
+        MPSImageHistogramEqualization *equalization = [[MPSImageHistogramEqualization alloc] initWithDevice:_device histogramInfo:&info];
+        // 根据直方图计算累加直方图数据
+        [equalization encodeTransformToCommandBuffer:commandBuffer sourceTexture:sourceTexture histogram:histogramInfoBuffer histogramOffset:0];
+        // 最后进行均衡化处理
+        [equalization encodeToCommandBuffer:commandBuffer sourceImage:sourceTexture destinationImage:destTexture];
+        
         id<MTLRenderCommandEncoder> myRenderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:curRenderDescriptor];
+        
+        /*
+        // Histogram
+        [myRenderEncoder pushDebugGroup:@"clearBuffer"];
+        [myRenderEncoder setRenderPipelineState:_clearHistogramPipeline];
+        [myRenderEncoder setTileBuffer:_accHistogramBuffer offset:0 atIndex:0];
+        [myRenderEncoder dispatchThreadsPerTile:MTLSizeMake(32, 32, 1)];
+        [myRenderEncoder popDebugGroup];
+        [myRenderEncoder pushDebugGroup:@"calHistogram"];
+        [myRenderEncoder setRenderPipelineState:_calHistogramPipeline];
+        [myRenderEncoder setTileTexture:sourceTexture atIndex:0];
+        [myRenderEncoder setTileBuffer:_accHistogramBuffer offset:0 atIndex:0];
+        [myRenderEncoder dispatchThreadsPerTile:MTLSizeMake(32, 32, 1)];
+        [myRenderEncoder popDebugGroup];
         
         // 图像处理
         [myRenderEncoder pushDebugGroup:@"ImageProcess"];
@@ -179,6 +222,7 @@
         [myRenderEncoder setTileBuffer:_accHistogramBuffer offset:0 atIndex:0];
         [myRenderEncoder dispatchThreadsPerTile:MTLSizeMake(32, 32, 1)];
         [myRenderEncoder popDebugGroup];
+         */
         
         // 绘制RT到屏幕上
         [myRenderEncoder pushDebugGroup:@"DrawQuad"];
